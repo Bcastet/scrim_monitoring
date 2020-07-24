@@ -1,0 +1,58 @@
+{
+    "MatchMetadata": {
+        "GameDuration": 1590,
+        "AllPlayers": [
+            {
+                "NAME": "GW Enjavwe",
+                "SKIN": "Bard",
+                "GOLD_SPENT": "7650",
+                "CHAMPIONS_KILLED": "2",
+                "NUM_DEATHS": "7",
+                "ASSISTS": "18",
+                "VISION_SCORE": "66",
+                "TOTAL_DAMAGE_DEALT_TO_CHAMPIONS": "11779"
+            },
+            {
+                "NAME": "GW Seelame",
+                "SKIN": "Senna",
+                "GOLD_SPENT": "13859",
+                "CHAMPIONS_KILLED": "14",
+                "NUM_DEATHS": "4",
+                "ASSISTS": "11",
+                "VISION_SCORE": "34",
+                "TOTAL_DAMAGE_DEALT_TO_CHAMPIONS": "23667"
+            },
+            {
+                "NAME": "GW KarimKt",
+                "SKIN": "Volibear",
+                "GOLD_SPENT": "10906",
+                "CHAMPIONS_KILLED": "4",
+                "NUM_DEATHS": "1",
+                "ASSISTS": "18",
+                "VISION_SCORE": "39",
+                "TOTAL_DAMAGE_DEALT_TO_CHAMPIONS": "8006"
+            },
+            {
+                "NAME": "GW Salut a tous",
+                "SKIN": "Sett",
+                "GOLD_SPENT": "11422",
+                "CHAMPIONS_KILLED": "5",
+                "NUM_DEATHS": "2",
+                "ASSISTS": "4",
+                "VISION_SCORE": "12",
+                "TOTAL_DAMAGE_DEALT_TO_CHAMPIONS": "13278"
+            },
+            {
+                "NAME": "GW Von",
+                "SKIN": "Fiddlesticks",
+                "GOLD_SPENT": "10328",
+                "CHAMPIONS_KILLED": "5",
+                "NUM_DEATHS": "4",
+                "ASSISTS": "16",
+                "VISION_SCORE": "37",
+                "TOTAL_DAMAGE_DEALT_TO_CHAMPIONS": "16272"
+            }
+        ],
+        "Win": true
+    }
+}
