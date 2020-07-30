@@ -1,0 +1,58 @@
+{
+    "MatchMetadata": {
+        "GameDuration": 1925,
+        "AllPlayers": [
+            {
+                "NAME": "GW Enjavwe",
+                "SKIN": "Pyke",
+                "GOLD_SPENT": "11819",
+                "CHAMPIONS_KILLED": "8",
+                "NUM_DEATHS": "7",
+                "ASSISTS": "6",
+                "VISION_SCORE": "141",
+                "TOTAL_DAMAGE_DEALT_TO_CHAMPIONS": "12620"
+            },
+            {
+                "NAME": "GW Seelame",
+                "SKIN": "Ashe",
+                "GOLD_SPENT": "13299",
+                "CHAMPIONS_KILLED": "3",
+                "NUM_DEATHS": "6",
+                "ASSISTS": "5",
+                "VISION_SCORE": "29",
+                "TOTAL_DAMAGE_DEALT_TO_CHAMPIONS": "14648"
+            },
+            {
+                "NAME": "GW KarimKt",
+                "SKIN": "Volibear",
+                "GOLD_SPENT": "10548",
+                "CHAMPIONS_KILLED": "3",
+                "NUM_DEATHS": "5",
+                "ASSISTS": "6",
+                "VISION_SCORE": "34",
+                "TOTAL_DAMAGE_DEALT_TO_CHAMPIONS": "9599"
+            },
+            {
+                "NAME": "GW Salut a tous",
+                "SKIN": "Sett",
+                "GOLD_SPENT": "10956",
+                "CHAMPIONS_KILLED": "0",
+                "NUM_DEATHS": "5",
+                "ASSISTS": "4",
+                "VISION_SCORE": "35",
+                "TOTAL_DAMAGE_DEALT_TO_CHAMPIONS": "10205"
+            },
+            {
+                "NAME": "GW Von",
+                "SKIN": "Vladimir",
+                "GOLD_SPENT": "12038",
+                "CHAMPIONS_KILLED": "1",
+                "NUM_DEATHS": "4",
+                "ASSISTS": "5",
+                "VISION_SCORE": "23",
+                "TOTAL_DAMAGE_DEALT_TO_CHAMPIONS": "14605"
+            }
+        ],
+        "Win": false
+    }
+}

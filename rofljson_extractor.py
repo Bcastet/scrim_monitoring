@@ -6,12 +6,12 @@ import os
 gameward = ["GW Salut a tous","GW KarimKt","GW Von","GW Seelame","GW Enjavwe"]
 
 
-raw_stats = ["NUM_DEATHS","CHAMPIONS_KILLED","ASSISTS"]
-per_minute_stats = ['GOLD_SPENT',"TOTAL_DAMAGE_DEALT_TO_CHAMPIONS","VISION_SCORE"]
-per_minutes_stats_proper_names = ["Golds/min","Dmg/min","Vision/min"]
+raw_stats = ["NUM_DEATHS","CHAMPIONS_KILLED","ASSISTS","Kill participation"]
+per_minute_stats = ['GOLD_SPENT',"TOTAL_DAMAGE_DEALT_TO_CHAMPIONS","VISION_SCORE","TOTAL_DAMAGE_DEALT_TO_TURRETS","CONTROL_WARDS_PURCHASED"]
+per_minutes_stats_proper_names = ["Golds/min","Dmg/min","Vision/min","Turret dmg/min","Pinks/min","Dmg diff/min","Dmg diff/min"]
 
 directory = "Scrim_files"
-
+dirs_to_ignore = ["09-07-2020","10-07-2020"]
 
 def get_week_statistics(week):
     overall = get_all_players_dict()
@@ -23,7 +23,8 @@ def get_week_statistics(week):
     else:
         directory =  "Last_week_scrim_files"
 
-    for dirname in os.listdir(directory):
+    dirs = [x for x in os.listdir(directory) if x not in dirs_to_ignore]
+    for dirname in dirs:
         for filename in os.listdir(directory+dirname):
             if filename.endswith(".json"):
                 number_of_games+=1
@@ -32,24 +33,24 @@ def get_week_statistics(week):
                 for player in json_match["MatchMetadata"]["AllPlayers"]:
                     if player["NAME"] in gameward:
                         for stat in per_minute_stats:                           
-                            overall[player["NAME"]][stat] += int(player[stat])/((json_match["MatchMetadata"]["GameDuration"])/60)
+                            overall[player["NAME"]][stat] += float(player[stat])/((json_match["MatchMetadata"]["GameDuration"])/60)
                         for stat in raw_stats:
-                            overall[player["NAME"]][stat] += int(player[stat])
-
+                            overall[player["NAME"]][stat] += float(player[stat])
+                    assert(player["SKIN"]!="")
                     if player["SKIN"] in per_champion[player["NAME"]].keys():
                         per_champion[player["NAME"]][  player["SKIN"]]["NB_GAMES"]+=1
-                        per_champion[player["NAME"]][  player["SKIN"]]["NB_WINS"] += int(json_match["MatchMetadata"]["Win"])
+                        per_champion[player["NAME"]][  player["SKIN"]]["NB_WINS"] += float(json_match["MatchMetadata"]["Win"])
                         for stat in per_minute_stats:
-                            per_champion[player["NAME"]][  player["SKIN"]][stat] += int(player[stat])/((json_match["MatchMetadata"]["GameDuration"])/60)
+                            per_champion[player["NAME"]][player["SKIN"]][stat] += float(player[stat])/((json_match["MatchMetadata"]["GameDuration"])/60)
                         for stat in raw_stats:
-                            per_champion[player["NAME"]][  player["SKIN"]][stat] += int(player[stat])
+                            per_champion[player["NAME"]][player["SKIN"]][stat] += float(player[stat])
                     else:
                         per_champion[player["NAME"]][  player["SKIN"]] = {"NB_GAMES":1}
-                        per_champion[player["NAME"]][  player["SKIN"]]["NB_WINS"] = int(json_match["MatchMetadata"]["Win"])
+                        per_champion[player["NAME"]][  player["SKIN"]]["NB_WINS"] = float(json_match["MatchMetadata"]["Win"])
                         for stat in per_minute_stats:
-                            per_champion[player["NAME"]][  player["SKIN"]][stat] = int(player[stat])/((json_match["MatchMetadata"]["GameDuration"])/60)
+                            per_champion[player["NAME"]][  player["SKIN"]][stat] = float(player[stat])/((json_match["MatchMetadata"]["GameDuration"])/60)
                         for stat in raw_stats:
-                            per_champion[player["NAME"]][  player["SKIN"]][stat] = int(player[stat])
+                            per_champion[player["NAME"]][  player["SKIN"]][stat] = float(player[stat])
     
     print("Nb_games : ",number_of_games)
     print(overall)
@@ -133,7 +134,7 @@ class WeekReport(xlsxwriter.Workbook):
         self.fmt_red.set_align('vcenter')
         
     def __init__(self):
-        super().__init__("Week_report_09-07"+".xlsx")
+        super().__init__("Week_report_26-07"+".xlsx")
         self.overall_stats_this_week, self.stats_per_champion_this_week = get_week_statistics("This week")
         #self.overall_stats_last_week, self.stats_per_champion_last_week = get_week_statistics("Last week")
         self.init_formats()
@@ -160,21 +161,21 @@ class WeekReport(xlsxwriter.Workbook):
         slist = sorted(player_per_champion_stats.keys(),key = by_games,reverse = True)
         
         for champion in slist:
-            self.week_report.write(starting_row+7,column,champion,self.fmt_header)
+            self.week_report.write(starting_row+10,column,champion,self.fmt_header)
             
-            self.week_report.write(starting_row+8,column,"KDA",self.fmt_gray)
-            self.week_report.write(starting_row+8,column + 1,kda_str(player_per_champion_stats[champion]["CHAMPIONS_KILLED"],player_per_champion_stats[champion]["NUM_DEATHS"],player_per_champion_stats[champion]["ASSISTS"]),self.fmt_gray)
+            self.week_report.write(starting_row+11,column,"KDA",self.fmt_gray)
+            self.week_report.write(starting_row+11,column + 1,kda_str(player_per_champion_stats[champion]["CHAMPIONS_KILLED"],player_per_champion_stats[champion]["NUM_DEATHS"],player_per_champion_stats[champion]["ASSISTS"]),self.fmt_gray)
             
             for stat_index in range(len(per_minute_stats)):
                 stat_type = per_minute_stats[stat_index]
-                self.week_report.write(starting_row+9 + stat_index ,column, per_minutes_stats_proper_names[stat_index], self.fmt_gray)
-                self.week_report.write(starting_row+9 + stat_index ,column+1, round(player_per_champion_stats[champion][stat_type],1), self.fmt_gray)
+                self.week_report.write(starting_row+12 + stat_index ,column, per_minutes_stats_proper_names[stat_index], self.fmt_gray)
+                self.week_report.write(starting_row+12 + stat_index ,column+1, round(player_per_champion_stats[champion][stat_type],1), self.fmt_gray)
             
-            self.week_report.write(starting_row+10+stat_index,column,"Games",self.fmt_gray)
-            self.week_report.write(starting_row+10+stat_index,column+1,player_per_champion_stats[champion]["NB_GAMES"],self.fmt_gray)
+            self.week_report.write(starting_row+13+stat_index,column,"Games",self.fmt_gray)
+            self.week_report.write(starting_row+13+stat_index,column+1,player_per_champion_stats[champion]["NB_GAMES"],self.fmt_gray)
             
-            self.week_report.write(starting_row+11+stat_index,column,"Winrate",self.fmt_gray)
-            self.week_report.write(starting_row+11+stat_index,column+1,str(round(player_per_champion_stats[champion]["NB_WINS"],2)*100)+"%",self.fmt_gray)
+            self.week_report.write(starting_row+14+stat_index,column,"Winrate",self.fmt_gray)
+            self.week_report.write(starting_row+14+stat_index,column+1,str(round(player_per_champion_stats[champion]["NB_WINS"],2)*100)+"%",self.fmt_gray)
             
             self.week_report.set_column(column,column,width = 20)
             self.week_report.set_column(column+1,column+1,width = 30)
@@ -184,8 +185,10 @@ class WeekReport(xlsxwriter.Workbook):
         row = 0
         for player in self.overall_stats_this_week.keys():
             self.write_player_stats(row,player,self.overall_stats_this_week[player],self.stats_per_champion_this_week[player],{},{})
-            row += 20
+            row += 25
 
 
 wr = WeekReport()
 wr.close()
+
+

@@ -5,84 +5,186 @@ import pytesseract
 import json
 weekdays = ["Th","F","S","M","Tu","W"]
 directory = "Scrim_files"
-stat_types_page1 = ["kda","TOTAL_DAMAGE_DEALT_TO_CHAMPIONS"]
-stat_types_page2 = ["GOLD_SPENT","VISION_SCORE"]
+stat_types_page1 = ["kda","TOTAL_DAMAGE_DEALT_TO_CHAMPIONS","TOTAL_DAMAGE_DEALT_TO_TURRETS"]
+stat_types_page2 = ["GOLD_SPENT","VISION_SCORE","CONTROL_WARDS_PURCHASED"]
 players_order = ["GW Enjavwe","GW Seelame","GW KarimKt","GW Salut a tous","GW Von"]
-
+stats_to_compare = ["TOTAL_DAMAGE_DEALT_TO_CHAMPIONS"]
+comparisons_field_names = {"TOTAL_DAMAGE_DEALT_TO_CHAMPIONS" : "DAMAGE_DIFFERENCE"}
 decalage_pix_entre_le_type_de_stat_et_la_stat = 222
+arrangment = [0,1,3,4,2]
 
 largeur_stat = 75
-used_fields = ["NAME","SKIN","GOLD_SPENT","CHAMPIONS_KILLED","NUM_DEATHS","ASSISTS","VISION_SCORE","TOTAL_DAMAGE_DEALT_TO_CHAMPIONS"]
+used_fields = ["NAME","SKIN","GOLD_SPENT","CHAMPIONS_KILLED","NUM_DEATHS","ASSISTS","VISION_SCORE","TOTAL_DAMAGE_DEALT_TO_CHAMPIONS","TOTAL_DAMAGE_DEALT_TO_TURRETS","CONTROL_WARDS_PURCHASED","DAMAGE_DIFFERENCE"]
 records = json.loads(open("manual_record.json").read())
 
 champion_template = cv2.imread("Resources/champion_template.png")
 champion_describer = json.loads(open("Resources/describer.json").read())
+dirs_to_ignore = ["09-07-2020","10-07-2020"]
 
 def get_week_scrims_to_rofl():
     game_rofls_dict = {}
-    for date_dir in os.listdir(directory):
+    dirs = [x for x in os.listdir(directory) if x not in dirs_to_ignore]
+    for date_dir in dirs:
         print("Scrims of",date_dir)
         for filename in os.listdir(directory + "/" + date_dir):
-            if filename.endswith(".PNG") and "BW" not in filename:
+            if (filename.endswith(".PNG") or filename.endswith(".png")) and "BW" not in filename:
                 game_identifier = date_dir + filename[:2]
-                
+                stats_computed_already = False
+                print(filename)
                 if game_identifier not in game_rofls_dict.keys():
-                    game_rofl = get_empty_game_dict()
+                    try:
+                        game_rofl = json.loads(open("Scrim_files/"+game_identifier[:10]+"/"+game_identifier[10:]+".json").read())
+                        print("Game found, reusing already found stats")
+                        stats_computed_already = True
+                    except FileNotFoundError:
+                        game_rofl = get_empty_game_dict()
+                    
                 else:
                     game_rofl = game_rofls_dict[game_identifier]
-                img = cv2.imread("Scrim_files/"+date_dir+"/"+filename,cv2.IMREAD_UNCHANGED)
-                if len(img.shape) > 2 and img.shape[2] == 4:
-                    img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
-                name = directory + "/"+date_dir + "/" + filename.replace(".PNG","")
-                color_img = np.copy(img)
-                
-                convert_to_bw(img,name)
-                
-                game_in_scrim = filename[2]
-                
-                if filename.count(game_in_scrim) == 2:
-                    print("Analyzing :"+game_identifier,filename)
-                    win, MPx, MPy = did_we_win(img)
-                    game_rofl["MatchMetadata"]["Win"] = win
-                    game_rofl["MatchMetadata"]["GameDuration"] = read_game_duration(img,MPx,MPy)
-                    if win:
-                        print("WIN")
-                    else:
-                        print("DEFEAT")
-                    #game_rofl["MatchMetadata"]["GameDuration"] = read_game_duration(img)
-                    index = 0
-                    #for champion in read_champions(color_img,MPx,MPy):
-                    #    game_rofl["MatchMetadata"]["AllPlayers"][index]["SKIN"] = champion
-                    #    index +=1
-                    #cv2.imwrite("CONNARDEDEMERDE.PNG",champion_template)
+                print(stats_computed_already)
+                if not stats_computed_already:
+                    img = cv2.imread("Scrim_files/"+date_dir+"/"+filename,cv2.IMREAD_UNCHANGED)
+                    if len(img.shape) > 2 and img.shape[2] == 4:
+                        img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
+                    name = directory + "/"+date_dir + "/" + filename.replace(".PNG","")
+                    color_img = np.copy(img)
                     
-                    for stat_type in stat_types_page1:
-                        MPx,MPy,trows,tcols  = find_line(stat_type,img,name)
-                        result = read_stat(MPx,MPy,trows,img,name,stat_type)
-                        if stat_type == "kda":
-                            for stat in result:
-                                index = result.index(stat)
-                                k,d,a = stat.rsplit("/")
-                                game_rofl["MatchMetadata"]["AllPlayers"][index]["CHAMPIONS_KILLED"] = k
-                                game_rofl["MatchMetadata"]["AllPlayers"][index]["NUM_DEATHS"] = d
-                                game_rofl["MatchMetadata"]["AllPlayers"][index]["ASSISTS"] = a
+                    convert_to_bw(img,name)
+                    
+                    game_in_scrim = filename[2]
+                    
+                    if filename.count(game_in_scrim) == 2:
+                        print("Analyzing :"+game_identifier,filename)
+                        win, MPx, MPy = did_we_win(img)
+                        game_rofl["MatchMetadata"]["Win"] = win
+                        if game_rofl["MatchMetadata"]["GameDuration"] is 0:
+                            game_rofl["MatchMetadata"]["GameDuration"] = read_game_duration(img,MPx,MPy)
+                        if win:
+                            print("WIN")
                         else:
+                            print("DEFEAT")
+                        #game_rofl["MatchMetadata"]["GameDuration"] = read_game_duration(img)
+                        index = 0
+                        #for champion in read_champions(color_img,MPx,MPy):
+                        #    game_rofl["MatchMetadata"]["AllPlayers"][index]["SKIN"] = champion
+                        #    index +=1
+                        #cv2.imwrite("CONNARDEDEMERDE.PNG",champion_template)
+                        
+                        for stat_type in stat_types_page1:
+                            MPx,MPy,trows,tcols  = find_line(stat_type,img,name)
+                            result = read_stat(MPx,MPy,trows,img,name,stat_type)
+                            if stat_type == "kda":
+                                index = 0
+                                for stat in result:
+                                    k,d,a = stat.rsplit("/")
+                                    game_rofl["MatchMetadata"]["AllPlayers"][index]["CHAMPIONS_KILLED"] = k
+                                    game_rofl["MatchMetadata"]["AllPlayers"][index]["NUM_DEATHS"] = d
+                                    game_rofl["MatchMetadata"]["AllPlayers"][index]["ASSISTS"] = a
+                                    index +=1
+                            elif stat_type in stats_to_compare:
+                                stat_name = comparisons_field_names[stat_type]
+                                for stat in result[:5]:
+                                    index = result.index(stat)
+                                    game_rofl["MatchMetadata"]["AllPlayers"][index][stat_type] = stat
+                                for stat in result[5:]:
+                                    print("Rewrite ok")
+                                    index = result[5:].index(stat)
+                                    game_rofl["MatchMetadata"]["AllPlayers"][index][stat_name] = str(int(result[arrangment[index%5]]) - int(stat))
+                            else:
+                                index = 0
+                                for stat in result:
+                                    if stat_type=="CONTROL_WARDS_PURCHASED":
+                                        print(game_rofl["MatchMetadata"]["AllPlayers"][index]["SKIN"] + " WAS CORRECTLY WRITTEN FU NOW")
+                                    game_rofl["MatchMetadata"]["AllPlayers"][index][stat_type] = stat
+                                    index +=1
+
+                    if filename.count(game_in_scrim) == 4:
+                        for stat_type in stat_types_page2:
+                            MPx,MPy,trows,tcols  = find_line(stat_type,img,name)
+                            result = read_stat(MPx,MPy,trows,img,name,stat_type)
+                            index = 0
                             for stat in result:
-                                index = result.index(stat)
                                 game_rofl["MatchMetadata"]["AllPlayers"][index][stat_type] = stat
-                if filename.count(game_in_scrim) == 4:
-                    for stat_type in stat_types_page2:
-                        MPx,MPy,trows,tcols  = find_line(stat_type,img,name)
-                        result = read_stat(MPx,MPy,trows,img,name,stat_type)
-                        for stat in result:
-                            index = result.index(stat)
-                            game_rofl["MatchMetadata"]["AllPlayers"][index][stat_type] = stat
-                game_rofls_dict[game_identifier] = game_rofl
-    
+                                index +=1
+                    game_rofls_dict[game_identifier] = game_rofl
+                
+                else:
+                    still_empty_stats = check_dict_status(game_rofl)
+                    img = cv2.imread("Scrim_files/"+date_dir+"/"+filename,cv2.IMREAD_UNCHANGED)
+                    if len(img.shape) > 2 and img.shape[2] == 4:
+                        img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
+                    name = directory + "/"+date_dir + "/" + filename.replace(".PNG","")
+                    color_img = np.copy(img)
+                    convert_to_bw(img,name)
+                    game_in_scrim = filename[2]
+                    if filename.count(game_in_scrim) == 2:
+                        print("Analyzing :"+game_identifier,filename)
+                        win, MPx, MPy = did_we_win(img)
+                        game_rofl["MatchMetadata"]["Win"] = win
+                        game_rofl["MatchMetadata"]["GameDuration"] = read_game_duration(img,MPx,MPy)
+                        if win:
+                            print("WIN")
+                        else:
+                            print("DEFEAT")
+                        #game_rofl["MatchMetadata"]["GameDuration"] = read_game_duration(img)
+                        index = 0
+                        #for champion in read_champions(color_img,MPx,MPy):
+                        #    game_rofl["MatchMetadata"]["AllPlayers"][index]["SKIN"] = champion
+                        #    index +=1
+                        #cv2.imwrite("CONNARDEDEMERDE.PNG",champion_template)
+                        
+                        for stat_type in stat_types_page1:
+                            if stat_type in still_empty_stats:
+                                MPx,MPy,trows,tcols  = find_line(stat_type,img,name)
+                                result = read_stat(MPx,MPy,trows,img,name,stat_type)
+                                if stat_type == "kda":
+                                    index = 0
+                                    for stat in result:
+                                        
+                                        k,d,a = stat.rsplit("/")
+                                        game_rofl["MatchMetadata"]["AllPlayers"][index]["CHAMPIONS_KILLED"] = k
+                                        game_rofl["MatchMetadata"]["AllPlayers"][index]["NUM_DEATHS"] = d
+                                        game_rofl["MatchMetadata"]["AllPlayers"][index]["ASSISTS"] = a
+                                        index +=1
+                                elif stat_type in stats_to_compare:
+                                    stat_name = comparisons_field_names[stat_type]
+                                    for stat in result[:5]:
+                                        
+                                        index = result.index(stat)
+                                        game_rofl["MatchMetadata"]["AllPlayers"][index][stat_type] = stat
+                                    for stat in result[5:]:
+                                        index = result[5:].index(stat)
+                                        game_rofl["MatchMetadata"]["AllPlayers"][index][stat_name] = str(int(result[arrangment[index%5]]) - int(stat))
+                                else:
+                                    index = 0
+                                    for stat in result:
+                                        game_rofl["MatchMetadata"]["AllPlayers"][index][stat_type] = stat
+                                        index +=1
+                    if filename.count(game_in_scrim) == 4:
+                        for stat_type in stat_types_page2:
+                            if stat_type in still_empty_stats:
+                                MPx,MPy,trows,tcols  = find_line(stat_type,img,name)
+                                result = read_stat(MPx,MPy,trows,img,name,stat_type)
+                                index =0
+                                for stat in result:
+                                    index = result.index(stat)
+                                    game_rofl["MatchMetadata"]["AllPlayers"][index][stat_type] = stat
+                                    index +=1
+                    game_rofls_dict[game_identifier] = game_rofl
     for scrim in game_rofls_dict.keys():
-        file = open("Scrim_files/"+scrim[:10]+"/"+scrim[10:]+".json","w+")
-        file.write(json.dumps(game_rofls_dict[scrim]))
-        print(scrim+".json written")
+        try:
+            kills = 0
+            scr = game_rofls_dict[scrim]
+            for player in scr["MatchMetadata"]["AllPlayers"]:
+                kills += int(player["CHAMPIONS_KILLED"])
+            for player in scr["MatchMetadata"]["AllPlayers"]:
+                player["Kill participation"] = str((int(player["CHAMPIONS_KILLED"]) + int(player["ASSISTS"]))/kills)
+
+            file = open("Scrim_files/"+scrim[:10]+"/"+scrim[10:]+".json","w+")
+            file.write(json.dumps(game_rofls_dict[scrim]))
+            print(scrim+".json written")
+        except:
+            pass
     
     file = open("manual_record.json","w+")
     file.write(json.dumps(records))
@@ -103,6 +205,7 @@ def convert_to_bw(image,name):
     cv2.imwrite(name+"BW.PNG",image)
 
 def find_line(stat_type,large_image,name):
+    print("Reading:",stat_type)
     small_image = cv2.imread("Resources/"+stat_type+".png")
     method = cv2.TM_CCOEFF_NORMED
     
@@ -117,8 +220,12 @@ def find_line(stat_type,large_image,name):
     return MPx,MPy,trows,tcols
 
 def read_stat(MPx,MPy,trows,image,name,type):
+    print("Analyzing stat:",type)
     toRet = []
-    for stat_index in range(5):
+
+    nb_to_read = (int(type in stats_to_compare)+1)*5
+    print(nb_to_read)
+    for stat_index in range(nb_to_read):
         stat_id = name + type + str(stat_index)
 
         left_border = MPx+decalage_pix_entre_le_type_de_stat_et_la_stat + largeur_stat * stat_index
@@ -239,11 +346,7 @@ def read_champions(img,Mpx,MPy):
         
     
     cv2.imwrite(fname+".PNG",img)
-    return toRet
-        
-    
-
-    
+    return toRet 
 
 def conditions_respected(type, number_string):
     if type == "kda":
@@ -277,7 +380,16 @@ def get_player_stat_dict():
         player_stat_dict[field] = ""
     return player_stat_dict
     
-
-    
+def check_dict_status(game_rofl):
+    empty_stats = []
+    for participant in game_rofl["MatchMetadata"]["AllPlayers"]:
+        for stat in used_fields:
+            if (stat not in participant.keys() or participant[stat] == "") and stat not in empty_stats:
+                empty_stats.append(stat)
+    if ("CHAMPIONS_KILLED" in empty_stats or "NUM_DEATHS" in empty_stats or "ASSISTS" in empty_stats):
+        empty_stats.append("kda")
+    empty_stats.append("CONTROL_WARDS_PURCHASED")
+    print(empty_stats)
+    return empty_stats
 
 get_week_scrims_to_rofl()
